@@ -35,6 +35,11 @@ fn main() {
     let directory = Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/tutorial");
     std::fs::create_dir_all(&directory).unwrap();
     for (file, world) in [
+        ("0_using_neuronify.neuronify", using_stimulate()),
+        ("0b_reading_a_voltage.neuronify", using_voltage()),
+        ("0c_changing_a_value.neuronify", using_value()),
+        ("0d_drawing_a_connection.neuronify", using_connection()),
+        ("0e_playback_bar.neuronify", using_playback()),
         ("1_spikes.neuronify", spikes()),
         ("2_leaks.neuronify", leaks()),
         ("3_push_and_pull.neuronify", push_and_pull()),
@@ -250,6 +255,117 @@ impl Canvas {
     }
 }
 
+fn using_stimulate() -> World {
+    let mut canvas = Canvas::new();
+    canvas.text("Part 1 of 5. Press a sensor. Click Stimulate, the lightning bolt on the left.");
+    let up = canvas.row(2.4);
+    let hand = canvas.add(Element::TouchSensor, 2.0, up);
+    let neuron = canvas.add(Element::ExcitatoryNeuron, 12.0, up);
+    canvas.connect(hand, neuron);
+    canvas.text(
+        "Press and hold the orange touch sensor for a moment, then let go. \
+         The blue neuron fires a spike.",
+    );
+    canvas.next(
+        "Reading a voltage",
+        "tutorial/0b_reading_a_voltage.neuronify",
+    );
+    canvas.world
+}
+
+fn using_voltage() -> World {
+    let mut canvas = Canvas::new();
+    canvas.text(
+        "Part 2 of 5. Read a voltage. Click Edit, the pencil on the left. \
+         Then click the blue neuron.",
+    );
+    let up = canvas.row(2.4);
+    let hand = canvas.add(Element::TouchSensor, 2.0, up);
+    let neuron = canvas.add(Element::ExcitatoryNeuron, 12.0, up);
+    canvas.connect(hand, neuron);
+    canvas.text(
+        "A panel opens at the top right. The number after Voltage, at the top of the panel, \
+         is the voltage of the neuron right now. Watch it for a few seconds.",
+    );
+    canvas.next("Changing a value", "tutorial/0c_changing_a_value.neuronify");
+    canvas.world
+}
+
+fn using_value() -> World {
+    let mut canvas = Canvas::new();
+    canvas.text(
+        "Part 3 of 5. Change a value. Click Edit, then click the current source, \
+         the brown circle with an arrow.",
+    );
+    let up = canvas.row(5.0);
+    let neuron = canvas.add(Element::ExcitatoryNeuron, 12.0, up);
+    canvas.current(neuron, 0.1 * NANOAMPERE, 4.0, up);
+    canvas.voltmeter(
+        neuron,
+        15.0,
+        up,
+        MeterSize {
+            width: 9.0,
+            height: 5.0,
+        },
+    );
+    canvas.text(
+        "In the panel that opens, find Current. Click the slider bar a little to the right, \
+         or drag the round handle. The number beside the slider changes, and so does the voltmeter.",
+    );
+    canvas.next(
+        "Drawing a connection",
+        "tutorial/0d_drawing_a_connection.neuronify",
+    );
+    canvas.world
+}
+
+fn using_connection() -> World {
+    let mut canvas = Canvas::new();
+    canvas.text(
+        "Part 4 of 5. Draw a connection. Click Connect on the left, \
+         then click Connection in the menu that opens.",
+    );
+    let up = canvas.row(2.4);
+    let hand = canvas.add(Element::TouchSensor, 2.0, up);
+    let first = canvas.add(Element::ExcitatoryNeuron, 9.0, up);
+    let second = canvas.add(Element::ExcitatoryNeuron, 19.0, up);
+    canvas.connect(hand, first);
+    canvas.text(
+        "Drag from the center of the first neuron to the center of the second neuron. \
+         A line with an arrow appears. Then click Stimulate and press the touch sensor.",
+    );
+    let _ = second;
+    canvas.next("The playback bar", "tutorial/0e_playback_bar.neuronify");
+    canvas.world
+}
+
+fn using_playback() -> World {
+    let mut canvas = Canvas::new();
+    canvas.text(
+        "Part 5 of 5. Use the playback bar at the bottom of the screen. \
+         Click the round blue button to pause, and click it again to play.",
+    );
+    let up = canvas.row(5.0);
+    let neuron = canvas.add(Element::ExcitatoryNeuron, 12.0, up);
+    canvas.current(neuron, 0.4 * NANOAMPERE, 4.0, up);
+    canvas.voltmeter(
+        neuron,
+        15.0,
+        up,
+        MeterSize {
+            width: 9.0,
+            height: 5.0,
+        },
+    );
+    canvas.text(
+        "The minus and plus buttons make the simulation slower or faster. \
+         The clock beside them shows the time in seconds.",
+    );
+    canvas.next("Spikes", "tutorial/1_spikes.neuronify");
+    canvas.world
+}
+
 fn spikes() -> World {
     let mut canvas = Canvas::new();
     canvas.text(
@@ -336,7 +452,10 @@ fn push_and_pull() -> World {
         "Pressing the touch sensor connected to the blue, excitatory neuron \
          will make the middle one fire more often. The red, inhibitory one will make it fire less.",
     );
-    canvas.next("Choosing sides", "tutorial/4_choosing.neuronify");
+    canvas.text(
+        "That is the end of the tutorial. Click the grid button at the bottom right \
+         to go back to the start page and open a circuit.",
+    );
     canvas.world
 }
 

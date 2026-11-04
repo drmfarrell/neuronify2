@@ -71,10 +71,10 @@ async function __trunkInitializer(init, source, sourceSize, initializer, initWit
 }
 
 
-import init, * as bindings from './neuronify-52b62ffe57214bfa.js';
+import init, * as bindings from './neuronify-ffd7ac323df7070a.js';
 import initializer from './12e6c8df78e6db1f-loading.js';
 
-const wasm = await __trunkInitializer(init, './neuronify-52b62ffe57214bfa_bg.wasm', 11614191, initializer(), true);
+const wasm = await __trunkInitializer(init, './neuronify-ffd7ac323df7070a_bg.wasm', 11523953, initializer(), true);
 
 
 window.wasmBindings = bindings;
@@ -296,7 +296,7 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
         }
       }
     </style>
-  <link rel="modulepreload" href="./neuronify-52b62ffe57214bfa.js" crossorigin="anonymous" integrity="sha384-fsNkFTp1cNkZXVZM2noRXiZfFszncnoTOSWXCo559PdI7s/k19YR5y65abpQj1wO"><link rel="modulepreload" href="./12e6c8df78e6db1f-loading.js" crossorigin="anonymous" integrity="sha384-t+UkPmDfVxe+EhzAW5wnrlWTwNobXN+AfTkGQ3U/O73qjnVr821CQGAM/OOQ1oyG"><link rel="preload" href="./neuronify-52b62ffe57214bfa_bg.wasm" crossorigin="anonymous" integrity="sha384-oD2Xc2EKXI7xquePjAaoWzTu46LKHbWgTZfvgDHxeBhZ/XcCVx0cle7bWcYBBdsB" as="fetch" type="application/wasm"></head>
+  <link rel="modulepreload" href="./neuronify-ffd7ac323df7070a.js" crossorigin="anonymous" integrity="sha384-R179YpCkNn3oZaNlPwQ+RT68I5fyX5ls7rq+0+QIKwCZBJvzSdF/XJeQcToKlhSg"><link rel="modulepreload" href="./12e6c8df78e6db1f-loading.js" crossorigin="anonymous" integrity="sha384-t+UkPmDfVxe+EhzAW5wnrlWTwNobXN+AfTkGQ3U/O73qjnVr821CQGAM/OOQ1oyG"><link rel="preload" href="./neuronify-ffd7ac323df7070a_bg.wasm" crossorigin="anonymous" integrity="sha384-CuGiR6TNkyd3/Ur1cjyMJjEK8QHJxMbX3NYE7ztPnKnChIjWfLKnsRsBTp5jcz/Q" as="fetch" type="application/wasm"></head>
   <body>
     <canvas id="glcanvas"></canvas>
     <div id="loading" role="status" aria-label="Loading" ontransitionend="if (event.target === this) this.remove()">
