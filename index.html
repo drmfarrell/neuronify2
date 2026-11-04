@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neuronify</title>
+    
+<script type="module">
+async function __trunkInitializer(init, source, sourceSize, initializer, initWithObject) {
+  if (initializer === undefined) {
+    return await init(initWithObject ? { module_or_path: source } : source);
+  }
+
+  const {
+    onStart, onProgress, onComplete, onSuccess, onFailure
+  } = initializer;
+
+  onStart?.();
+
+  const response = fetch(source)
+      .then((response) => {
+        const reader = response.body.getReader();
+        const headers = response.headers;
+        const status = response.status;
+        const statusText = response.statusText;
+
+        const total = sourceSize;
+        let current = 0;
+
+        const stream = new ReadableStream({
+          start(controller) {
+            function push() {
+              reader.read().then(({done, value}) => {
+                if (done) {
+                  onProgress?.({current: total, total});
+                  controller.close();
+                  return;
+                }
+
+                current += value.byteLength;
+                onProgress?.({current, total});
+                controller.enqueue(value);
+                push();
+              });
+            }
+
+            push();
+          },
+        });
+
+        return {
+          stream, init: {
+            headers, status, statusText
+          }
+        };
+      })
+      .then(({stream, init}) =>
+          new Response(stream, init),
+      );
+
+  return init(initWithObject ? { module_or_path: response } : response)
+      .then((value) => {
+        onComplete?.();
+        onSuccess?.(value);
+        return value;
+      }, (reason) => {
+        onComplete?.();
+        onFailure?.(reason);
+        return reason;
+      });
+}
+
+
+import init, * as bindings from './neuronify-4147affdfd946007.js';
+import initializer from './12e6c8df78e6db1f-loading.js';
+
+const wasm = await __trunkInitializer(init, './neuronify-4147affdfd946007_bg.wasm', 11587084, initializer(), true);
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script>
+    <link rel="icon" href="./icon-cd95f265c2229e04.png" integrity="sha384-kTmw6s2wWUA9ttVMelB9asa18XQr3y2EoVefjtrt1PcwUuszRB1V0yuAvLspzQ+3"/>
+    
+    <script>
+      const q = new URLSearchParams(location.search);
+      if (q.has("file") || q.has("open")) {
+        document.documentElement.classList.add("scene");
+      }
+    </script>
+    <style>
+      :root {
+        --background: #eceff5;
+        --surface: #ffffff;
+        --placeholder: rgba(76, 79, 105, 0.13);
+        --scene: #f2f5fc;
+        --accent: #1e66f5;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --background: #1e1e2e;
+          --surface: #313244;
+          --placeholder: rgba(205, 214, 244, 0.1);
+          --scene: #383a51;
+          --accent: #89b4fa;
+        }
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: var(--background);
+      }
+      #glcanvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+        outline: none;
+      }
+      #loading {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        background: var(--background);
+        transition: opacity 250ms ease-out;
+      }
+      #loading.done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #progress {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: var(--accent);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 200ms ease-out;
+      }
+      .page {
+        width: min(100% - 32px, 1100px);
+        margin: 0 auto;
+        padding-top: 30px;
+      }
+      .bar {
+        border-radius: 4px;
+        background: var(--placeholder);
+        animation: pulse 1.2s ease-in-out infinite alternate;
+      }
+      .title {
+        width: 147px;
+        height: 25px;
+        margin-bottom: 20px;
+      }
+      .subtitle {
+        width: 292px;
+        max-width: 100%;
+        height: 12px;
+      }
+      .heading {
+        display: flex;
+        justify-content: space-between;
+        margin: 37.5px 0 19.5px;
+      }
+      .cards ~ .heading {
+        margin-top: 50.5px;
+      }
+      .heading .bar {
+        height: 16px;
+      }
+      .heading .see-all {
+        width: 43px;
+        height: 12px;
+        margin-top: 2px;
+      }
+      .see-all[hidden] {
+        display: none;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 19px 16px;
+      }
+      .card {
+        padding: 10px 10px 13px;
+        border-radius: 10px;
+        background: var(--surface);
+      }
+      .thumbnail {
+        position: relative;
+        aspect-ratio: 16 / 9;
+        border-radius: 6px;
+        background: var(--background);
+      }
+      .plus::before,
+      .plus::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--placeholder);
+        animation: pulse 1.2s ease-in-out infinite alternate;
+      }
+      .plus::before {
+        width: 16.875%;
+        height: 2px;
+      }
+      .plus::after {
+        width: 2px;
+        height: 30%;
+        background: linear-gradient(
+          var(--placeholder) calc(50% - 1px),
+          transparent 0 calc(50% + 1px),
+          var(--placeholder) 0
+        );
+      }
+      .name {
+        max-width: 100%;
+        height: 12px;
+        margin-top: 13px;
+      }
+      .line {
+        max-width: 100%;
+        height: 11px;
+        margin-top: 9px;
+      }
+      .line:not([style]) {
+        width: 95%;
+      }
+      .line + .line:not([style]) {
+        width: 90%;
+        margin-top: 5px;
+      }
+      .narrow {
+        display: none;
+      }
+      @media (min-width: 664px) {
+        .page {
+          padding-top: 46px;
+        }
+        .cards {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .line + .line:not([style]) {
+          width: 60%;
+        }
+        .card:nth-child(3n + 2) .line + .line:not([style]) {
+          width: 85%;
+        }
+        .card:nth-child(3n) .line + .line:not([style]) {
+          width: 35%;
+        }
+      }
+      @media (min-width: 664px) and (max-width: 1131px) {
+        .narrow {
+          display: block;
+        }
+      }
+      .scene #loading {
+        background: var(--scene);
+      }
+      .scene .page {
+        display: none;
+      }
+      .scene #loading::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 24px;
+        height: 24px;
+        margin: -12px;
+        border-radius: 50%;
+        background: var(--placeholder);
+        animation: pulse 1.2s ease-in-out infinite alternate;
+      }
+      @keyframes pulse {
+        to {
+          opacity: 0.4;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bar,
+        .plus::before,
+        .plus::after,
+        .scene #loading::after {
+          animation: none;
+        }
+      }
+    </style>
+  <link rel="modulepreload" href="./neuronify-4147affdfd946007.js" crossorigin="anonymous" integrity="sha384-UVsrzr0PjVMO9dta4i+8H5aq/UFf5yDiUp7fsrXrZyEv2lxMivHNh9XWDTq6PkAX"><link rel="modulepreload" href="./12e6c8df78e6db1f-loading.js" crossorigin="anonymous" integrity="sha384-t+UkPmDfVxe+EhzAW5wnrlWTwNobXN+AfTkGQ3U/O73qjnVr821CQGAM/OOQ1oyG"><link rel="preload" href="./neuronify-4147affdfd946007_bg.wasm" crossorigin="anonymous" integrity="sha384-kmpNhbSHJOBYbIb5BqGxnDLSZsRM/3gAcn7tL1IUIbzFLzJvJ9egJwTjod1BbS1a" as="fetch" type="application/wasm"></head>
+  <body>
+    <canvas id="glcanvas"></canvas>
+    <div id="loading" role="status" aria-label="Loading" ontransitionend="if (event.target === this) this.remove()">
+      <div id="progress"></div>
+      <div class="page">
+        <div class="bar title"></div>
+        <div class="bar subtitle"></div>
+        <div class="heading"><div class="bar" style="width: 148px"></div><div class="bar see-all" hidden></div></div>
+        <div class="cards">
+          <div class="card"><div class="thumbnail plus"></div><div class="bar name" style="width: 110px"></div><div class="bar line" style="width: 111px"></div></div>
+        </div>
+        <script>
+          (() => {
+            let saved = 0;
+            try {
+              saved = Number(localStorage.getItem("neuronify-saved-simulations")) || 0;
+            } catch {}
+            const cards = document.currentScript.previousElementSibling;
+            const names = [70, 95, 55, 110, 80];
+            const dates = [88, 118, 88, 60, 100];
+            for (let i = 0; i < Math.min(saved, names.length); i++) {
+              cards.insertAdjacentHTML(
+                "beforeend",
+                `<div class="card"><div class="thumbnail"></div><div class="bar name" style="width: ${names[i]}px"></div><div class="bar line" style="width: ${dates[i]}px"></div></div>`,
+              );
+            }
+            cards.previousElementSibling.lastElementChild.hidden = saved <= names.length;
+          })();
+        </script>
+        <div class="heading"><div class="bar" style="width: 135px"></div><div class="bar see-all"></div></div>
+        <div class="cards">
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 61px"></div><div class="bar line"></div><div class="bar line"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 112px"></div><div class="bar line"></div><div class="bar line"></div><div class="bar line narrow"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 112px"></div><div class="bar line"></div><div class="bar line"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 122px"></div><div class="bar line"></div><div class="bar line"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 144px"></div><div class="bar line"></div><div class="bar line"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 142px"></div><div class="bar line"></div><div class="bar line"></div></div>
+        </div>
+        <div class="heading"><div class="bar" style="width: 75px"></div></div>
+        <div class="cards">
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 80px"></div><div class="bar line"></div><div class="bar line"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 60px"></div><div class="bar line"></div><div class="bar line"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 113px"></div><div class="bar line"></div><div class="bar line"></div><div class="bar line narrow"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 125px"></div><div class="bar line"></div><div class="bar line"></div></div>
+        </div>
+        <div class="heading"><div class="bar" style="width: 66px"></div></div>
+        <div class="cards">
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 82px"></div><div class="bar line"></div><div class="bar line"></div><div class="bar line narrow"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 102px"></div><div class="bar line"></div><div class="bar line"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 149px"></div><div class="bar line"></div><div class="bar line"></div><div class="bar line narrow"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 110px"></div><div class="bar line"></div><div class="bar line"></div><div class="bar line narrow"></div></div>
+        </div>
+        <div class="heading"><div class="bar" style="width: 84px"></div></div>
+        <div class="cards">
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 89px"></div><div class="bar line"></div><div class="bar line"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 139px"></div><div class="bar line"></div><div class="bar line"></div><div class="bar line narrow"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 120px"></div><div class="bar line"></div><div class="bar line"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 134px"></div><div class="bar line"></div><div class="bar line"></div></div>
+        </div>
+        <div class="heading"><div class="bar" style="width: 61px"></div></div>
+        <div class="cards">
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 113px"></div><div class="bar line"></div><div class="bar line"></div><div class="bar line narrow"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 151px"></div><div class="bar line"></div><div class="bar line"></div></div>
+          <div class="card"><div class="thumbnail"></div><div class="bar name" style="width: 140px"></div><div class="bar line"></div><div class="bar line"></div><div class="bar line narrow"></div></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
