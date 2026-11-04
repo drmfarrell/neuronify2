@@ -6,18 +6,29 @@ This brief is for the Claude Code agent on the wolfnode server.
 
 Serve the `site` branch of https://github.com/drmfarrell/neuronify2 as plain static files at
 **https://neuronify.wolfnode.org/**.
-It is a new Cloudflare-proxied subdomain, set up the same way as the existing `chemsim.wolfnode.org`.
-Look at how `chemsim` is served on this box (web server, site folder, certificate, Cloudflare record) and follow the same conventions.
+It is a Cloudflare-proxied subdomain, set up the same way as the other sites on this box (`chemsim`, `gameoflife`): nginx vhost, the wildcard Cloudflare Origin certificate, source checkout in `/home/user/<name>`, deployed by a script to `/var/www/<name>`.
 Do not invent paths or credentials. The site needs no Rust, no build step and no server-side code.
 
-## Get the files
+**It is already deployed (2026-11-04).** For updates, skip to [Update](#update).
+
+## Layout on the box
+
+| What | Where |
+|---|---|
+| Source checkout (`site` branch only) | `/home/user/neuronify` |
+| Served files (copy without `.git`) | `/var/www/neuronify` |
+| nginx vhost | `/etc/nginx/sites-available/neuronify.wolfnode.org` |
+| Deploy script | `/home/user/deploy-neuronify.sh` |
+| Cloudflare DNS | `A neuronify` → this box, proxied (orange cloud) |
+
+The source checkout was made with:
 
 ```
-git clone -b site --single-branch https://github.com/drmfarrell/neuronify2.git neuronify-site
+git clone -b site --single-branch https://github.com/drmfarrell/neuronify2.git /home/user/neuronify
 ```
 
-Put the checkout where this box keeps its static sites, and point the web server's document root for `neuronify.wolfnode.org` at the checkout folder (the folder that contains `index.html`).
-The `.git` folder must not be served: deny `/.git/` in the server config.
+Do **not** point the document root at the checkout. The deploy script copies the files over without `.git`.
+As a second line of defence, the vhost returns 404 for every dotfile path (`/.git/` included) and for `/examples/lab10/solutions/`.
 
 ## Server settings
 
@@ -33,10 +44,20 @@ The `.git` folder must not be served: deny `/.git/` in the server config.
 ## Update
 
 ```
-cd neuronify-site && git pull
+~/deploy-neuronify.sh            # or --no-pull to redeploy the current checkout
 ```
 
-Nothing else. If Cloudflare caches the old `index.html`, purge it.
+The script, in order:
+
+1. Runs `git pull --ff-only` in `/home/user/neuronify`.
+2. Runs sanity checks: every hashed asset that `index.html` references must exist, plus all eight Lab 10 circuits. If anything is missing, the script stops without deploying, so a half-pushed `site` branch can't give students a blank page.
+3. Rsyncs to `/var/www/neuronify` without `.git` (`--delete --delete-excluded`).
+4. Runs the [Verify](#verify-run-these-on-the-box) curl checks against the live site and exits non-zero if any fail.
+
+No Cloudflare purge is needed. Cloudflare does not edge-cache `index.html`, `examples/*.neuronify` or `.wasm` (`cf-cache-status: DYNAMIC`), and nginx sends them `no-cache`.
+The hashed `.js` is edge-cached, but its name changes with every build.
+
+To publish a new build, push it to the `site` branch, then run the script on the box.
 
 ## Addresses
 
@@ -62,14 +83,22 @@ The answer-key circuits are not in the public repository.
 
 ```
 curl -sI https://neuronify.wolfnode.org/ | head -5                     # 200, text/html
-W=$(grep -o 'neuronify-[0-9a-f]*_bg.wasm' neuronify-site/index.html | head -1)
+W=$(grep -o 'neuronify-[0-9a-f]*_bg.wasm' /var/www/neuronify/index.html | head -1)
 curl -sI https://neuronify.wolfnode.org/$W | grep -i '^content-type'   # application/wasm
 for n in 1-threshold 2-one-input 3-steady-rate 4-spatial 5-synaptic-strength 6-inhibition 7-refractory-optional 8-logic-challenge; do
   curl -s -o /dev/null -w "%{http_code} $n\n" https://neuronify.wolfnode.org/examples/lab10/$n.neuronify
 done                                                                    # eight lines starting with 200
+curl -s -o /dev/null -w "%{http_code}\n" https://neuronify.wolfnode.org/.git/HEAD   # 404
 ```
 
-Then open `https://neuronify.wolfnode.org/?open=examples/lab10/2-one-input.neuronify` in a real browser (not headless). You should see a toolbar on the left with Edit selected, a note, three circles and a voltmeter box. Click the View button, then click the orange touch button: the voltmeter trace should show a small bump. Report the results and anything that differs from the existing `chemsim` setup.
+`~/deploy-neuronify.sh` runs these checks itself at the end.
+
+Then open `https://neuronify.wolfnode.org/?open=examples/lab10/2-one-input.neuronify` in a real browser (not headless). You should see a toolbar on the left with Stimulate selected, a note, three circles and a voltmeter box. Click the orange touch button: the voltmeter trace should show a small bump.
+
+On the box itself, which has no GPU: Playwright's Chromium under `xvfb-run` exposes `navigator.gpu`, but no adapter is available. The app then panics with `Failed to create application: NoAdapter` and does not fall back to WebGL2.
+To test on the box, hide WebGPU first (`delete Navigator.prototype.gpu` in an init script) so the app uses WebGL2.
+Software rendering on 1 CPU runs at about 1 frame/s, so hold each mouse press for ~2 s or it may not register.
+Chrome, Edge and Firefox on a normal desktop with a GPU load fine (checked 2026-11-04; Chromium is noticeably slower to start). A machine whose browser exposes WebGPU without a usable adapter would hit the same panic. The missing WebGL2 fallback is a bug in the app, not in the server setup.
 
 The browser needs WebGPU or WebGL2, which current Chrome, Edge, Firefox and Safari have.
 
