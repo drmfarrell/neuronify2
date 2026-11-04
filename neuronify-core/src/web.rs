@@ -24,6 +24,8 @@ pub struct LoadedFile {
     pub picked: bool,
     /// Opened with `?open=`: start with the editor showing.
     pub edit: bool,
+    /// `&mode=edit|stimulate|view` on the address: the tool to start in (`?open=` defaults to stimulate).
+    pub mode: Option<String>,
 }
 
 thread_local! {
@@ -35,7 +37,7 @@ thread_local! {
 /// Starts fetching the file named by the `file` or `open` query parameter.
 /// Returns false if the page names no file.
 pub fn fetch_requested_file() -> bool {
-    let Some((url, edit)) = requested_file() else {
+    let Some((url, edit, mode)) = requested_file() else {
         return false;
     };
     FETCHING.set(true);
@@ -47,6 +49,7 @@ pub fn fetch_requested_file() -> bool {
                 bytes,
                 picked: false,
                 edit,
+                mode,
             })
             .map_err(|e| {
                 // fetch rejects with a TypeError, while fetch_bytes rejects with a string
@@ -99,6 +102,7 @@ pub fn pick_file() -> Result<(), JsValue> {
                     bytes: js_sys::Uint8Array::new(&buffer).to_vec(),
                     picked: true,
                     edit: false,
+                    mode: None,
                 })
                 .map_err(|error| format!("Could not read {}: {error:?}", file.name()));
             LOADED.with(|loaded| *loaded.borrow_mut() = Some(result));
@@ -208,12 +212,13 @@ fn name_in(url: &str) -> String {
 }
 
 /// The file named by `?file=` (shown with the editor hidden) or `?open=` (shown in the editor).
-fn requested_file() -> Option<(String, bool)> {
+fn requested_file() -> Option<(String, bool, Option<String>)> {
     let search = web_sys::window()?.location().search().ok()?;
     let params = web_sys::UrlSearchParams::new_with_str(&search).ok()?;
+    let mode = params.get("mode");
     match params.get("open") {
-        Some(url) => Some((url, true)),
-        None => params.get("file").map(|url| (url, false)),
+        Some(url) => Some((url, true, mode)),
+        None => params.get("file").map(|url| (url, false, mode)),
     }
 }
 

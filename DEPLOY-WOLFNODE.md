@@ -56,7 +56,7 @@ A lab circuit opens in the editor with `?open=` (relative to the site root):
 | 8 Take-home: logic challenge | `/?open=examples/lab10/8-logic-challenge.neuronify` |
 
 Put `https://neuronify.wolfnode.org` in front of each.
-The answer-key circuits are in `examples/lab10/solutions/` (`solved-AND`, `solved-OR`, `solved-XOR`). They are not linked from the landing page. Students could open them by guessing the address; if that matters, deny `/examples/lab10/solutions/` in the server config.
+The answer-key circuits are not in the public repository.
 
 ## Verify (run these on the box)
 
@@ -72,3 +72,5 @@ done                                                                    # eight 
 Then open `https://neuronify.wolfnode.org/?open=examples/lab10/2-one-input.neuronify` in a real browser (not headless). You should see a toolbar on the left with Edit selected, a note, three circles and a voltmeter box. Click the View button, then click the orange touch button: the voltmeter trace should show a small bump. Report the results and anything that differs from the existing `chemsim` setup.
 
 The browser needs WebGPU or WebGL2, which current Chrome, Edge, Firefox and Safari have.
+
+Address parameters: `?open=<file>` starts in the Stimulate tool, so a first press on a touch sensor fires a neuron. Add `&mode=edit` or `&mode=view` to start in another tool (the take-home logic challenge uses `&mode=edit`).
