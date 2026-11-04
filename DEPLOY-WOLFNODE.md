@@ -74,3 +74,13 @@ Then open `https://neuronify.wolfnode.org/?open=examples/lab10/2-one-input.neuro
 The browser needs WebGPU or WebGL2, which current Chrome, Edge, Firefox and Safari have.
 
 Address parameters: `?open=<file>` starts in the Stimulate tool, so a first press on a touch sensor fires a neuron. Add `&mode=edit` or `&mode=view` to start in another tool (the take-home logic challenge uses `&mode=edit`).
+
+## For the server agent: make Cloudflare cache the app files
+
+Measured on 2026-11-04 from the instructor's box: the `.wasm` file is served gzip (3.4 MB) with `cache-control: public, max-age=31536000, immutable`, but the response says `cf-cache-status: DYNAMIC`. Cloudflare does not cache `.wasm` by default (it is not in its default cached extensions), so every student download comes from the origin at about 100 to 170 KB/s, which is 20 to 34 seconds each. A room of 25 opening the page together would share that speed.
+
+This needs Cloudflare dashboard or API access; the repository cannot fix it.
+
+1. Create a Cache Rule for host `neuronify.wolfnode.org`: for paths ending in `.wasm` or `.js`, set "Eligible for cache" and "Respect origin TTL" (the files carry a one-year immutable TTL because their names contain a hash).
+2. Keep `index.html` short-lived so that a new build is seen after a pull: either leave it uncached, or give it an edge TTL of a few minutes.
+3. Check with `curl -sI https://neuronify.wolfnode.org/<the .wasm file named in index.html>` twice. The first request may show `cf-cache-status: MISS`; the second must show `cf-cache-status: HIT`.
