@@ -8,7 +8,8 @@
     <link data-trunk rel="icon" href="../neuronify-core/assets/icon.png" />
     <link data-trunk rel="copy-dir" href="../neuronify-core/examples" />
     <script>
-      if (new URLSearchParams(location.search).has("file")) {
+      const q = new URLSearchParams(location.search);
+      if (q.has("file") || q.has("open")) {
         document.documentElement.classList.add("scene");
       }
     </script>

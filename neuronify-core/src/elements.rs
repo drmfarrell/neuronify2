@@ -176,9 +176,20 @@ pub fn spawn_connection(world: &mut World, from: Entity, to: Entity) -> Entity {
             .unwrap();
         connection
     } else {
-        spawn_synapse(world, from, to)
+        let synapse = spawn_synapse(world, from, to);
+        // Cheyney lab fork: a connection drawn in the editor starts weak, so that one spike
+        // gives the next neuron a bump of about 10 mV and does not fire it (upstream starts
+        // at the CurrentSynapse default of 6 nA, which fires it).
+        world
+            .get::<&mut CurrentSynapse>(synapse)
+            .unwrap()
+            .maximum_current = EDITOR_SYNAPSE_CURRENT;
+        synapse
     }
 }
+
+/// The maximum current of a synapse drawn in the editor, in amperes.
+pub const EDITOR_SYNAPSE_CURRENT: f64 = 1.3e-9;
 
 pub fn spawn_cable(world: &mut World, from: Entity, to: Entity, directional: bool) -> Entity {
     world.spawn((

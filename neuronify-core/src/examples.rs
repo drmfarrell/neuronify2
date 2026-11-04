@@ -112,6 +112,51 @@ pub const EXAMPLE_CATEGORIES: &[ExampleCategory] = &[
         ],
     },
     ExampleCategory {
+        name: "A&P Lab 10: synaptic summation",
+        examples: &[
+            Example {
+                name: "1. Threshold",
+                description: "Raise the current into one neuron until it fires.",
+                contents: saved!("lab10/1-threshold.neuronify"),
+            },
+            Example {
+                name: "2. One input, two presses",
+                description: "One press fades away. Two quick presses add up and fire the output.",
+                contents: saved!("lab10/2-one-input.neuronify"),
+            },
+            Example {
+                name: "3. Steady rate",
+                description: "Change how fast the input fires and find the rate where the output fires.",
+                contents: saved!("lab10/3-steady-rate.neuronify"),
+            },
+            Example {
+                name: "4. Three inputs at once",
+                description: "One input is too weak and two are too weak. All three together fire the output.",
+                contents: saved!("lab10/4-spatial.neuronify"),
+            },
+            Example {
+                name: "5. Synaptic strength",
+                description: "Make one connection strong enough that its input alone fires the output.",
+                contents: saved!("lab10/5-synaptic-strength.neuronify"),
+            },
+            Example {
+                name: "6. Inhibition",
+                description: "An inhibitory neuron pulls the output down and cancels some excitatory inputs.",
+                contents: saved!("lab10/6-inhibition.neuronify"),
+            },
+            Example {
+                name: "7. Refractory period (optional)",
+                description: "The output cannot fire again right after a spike.",
+                contents: saved!("lab10/7-refractory-optional.neuronify"),
+            },
+            Example {
+                name: "Take-home: logic challenge",
+                description: "Connect the inputs to the output so that it behaves like AND, then OR.",
+                contents: saved!("lab10/8-logic-challenge.neuronify"),
+            },
+        ],
+    },
+    ExampleCategory {
         name: "Neurons",
         examples: &[
             Example {

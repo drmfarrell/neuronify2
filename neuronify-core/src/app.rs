@@ -432,8 +432,12 @@ impl visula::Simulation for Neuronify {
 
         #[cfg(target_arch = "wasm32")]
         if let Some(loaded) = crate::web::take_loaded_file() {
+            let edit = loaded.as_ref().is_ok_and(|file| file.edit);
             let opened =
                 loaded.and_then(|file| self.open_file(&file.name, &file.bytes, file.picked));
+            if opened.is_ok() && edit {
+                self.editor.tool = Tool::Edit;
+            }
             if let Err(error) = opened {
                 log::error!("{error}");
                 self.load_error = Some(error);

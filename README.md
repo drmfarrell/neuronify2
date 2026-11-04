@@ -1,3 +1,21 @@
+# Neuronify 2 for Cheyney University A&P I labs
+
+This is a fork of [Neuronify 2](https://github.com/dragly/neuronify) (GPL-3.0) for the A&P I labs at Cheyney University of Pennsylvania.
+It is based on upstream `main` at commit `5cc56981db7806506c736e344c531cc9a5fa696d`.
+The source in this repository is the GPL source offer for the web build served from the `site` branch.
+
+What this fork adds, all on the `cheyney-lab` branch:
+
+- A URL parameter `?open=<file>` that opens a circuit with the editor showing (`?file=<file>` still opens it with the editor hidden).
+- The Lab 10 circuits on synaptic summation in `neuronify-core/examples/lab10/`, listed on the landing page under "A&P Lab 10: synaptic summation".
+  `neuronify-core/lab/gen.rs` builds them and checks their behaviour (`cargo run --release --example lab_gen`).
+- A connection drawn in the editor between two neurons now starts at a maximum current of 1.3 nA (upstream: 6 nA), so one spike gives a bump of about 10 mV and does not fire the next neuron by itself. Bundled examples are not affected.
+- `DEPLOY-WOLFNODE.md`: how to serve the prebuilt `site` branch. The `site` branch holds only the built static files, so the server needs no Rust.
+
+The upstream README follows.
+
+---
+
 # Neuronify 2.0
 
 Neuronify is an educational neural network app.

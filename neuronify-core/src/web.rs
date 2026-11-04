@@ -22,6 +22,8 @@ pub struct LoadedFile {
     pub name: String,
     pub bytes: Vec<u8>,
     pub picked: bool,
+    /// Opened with `?open=`: start with the editor showing.
+    pub edit: bool,
 }
 
 thread_local! {
@@ -30,10 +32,10 @@ thread_local! {
     static LOADING_SCREEN_SHOWN: Cell<bool> = const { Cell::new(true) };
 }
 
-/// Starts fetching the file named by the `file` query parameter.
+/// Starts fetching the file named by the `file` or `open` query parameter.
 /// Returns false if the page names no file.
 pub fn fetch_requested_file() -> bool {
-    let Some(url) = requested_file() else {
+    let Some((url, edit)) = requested_file() else {
         return false;
     };
     FETCHING.set(true);
@@ -44,6 +46,7 @@ pub fn fetch_requested_file() -> bool {
                 name: name_in(&url),
                 bytes,
                 picked: false,
+                edit,
             })
             .map_err(|e| {
                 // fetch rejects with a TypeError, while fetch_bytes rejects with a string
@@ -95,6 +98,7 @@ pub fn pick_file() -> Result<(), JsValue> {
                     name: stem(&file.name()).to_owned(),
                     bytes: js_sys::Uint8Array::new(&buffer).to_vec(),
                     picked: true,
+                    edit: false,
                 })
                 .map_err(|error| format!("Could not read {}: {error:?}", file.name()));
             LOADED.with(|loaded| *loaded.borrow_mut() = Some(result));
@@ -203,11 +207,14 @@ fn name_in(url: &str) -> String {
         .unwrap_or_else(|_| file_name.to_owned())
 }
 
-fn requested_file() -> Option<String> {
+/// The file named by `?file=` (shown with the editor hidden) or `?open=` (shown in the editor).
+fn requested_file() -> Option<(String, bool)> {
     let search = web_sys::window()?.location().search().ok()?;
-    web_sys::UrlSearchParams::new_with_str(&search)
-        .ok()?
-        .get("file")
+    let params = web_sys::UrlSearchParams::new_with_str(&search).ok()?;
+    match params.get("open") {
+        Some(url) => Some((url, true)),
+        None => params.get("file").map(|url| (url, false)),
+    }
 }
 
 async fn fetch_bytes(url: &str) -> Result<Vec<u8>, JsValue> {
