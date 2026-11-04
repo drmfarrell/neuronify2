@@ -29,6 +29,16 @@ impl Example {
         }
     }
 
+    /// The tool a circuit opens in: Stimulate, so a first press fires a neuron,
+    /// and Edit for the logic challenge, where the first job is drawing connections.
+    pub fn start_tool(&self) -> crate::tools::Tool {
+        if self.file().contains("8-logic-challenge") {
+            crate::tools::Tool::Edit
+        } else {
+            crate::tools::Tool::Stimulate
+        }
+    }
+
     pub fn spawn(&self) -> Result<World, String> {
         match self.contents {
             Contents::Saved { bytes, .. } => Ok(crate::serialization::load(bytes)?.world),
@@ -40,6 +50,7 @@ pub fn find(file: &str) -> Option<&'static Example> {
     EXAMPLE_CATEGORIES
         .iter()
         .flat_map(|category| category.examples)
+        .chain(TUTORIAL_PAGES)
         .find(|example| example.file() == file)
 }
 
@@ -48,66 +59,94 @@ pub struct ExampleCategory {
     pub examples: &'static [Example],
 }
 
+/// Pages reached only by a Next link or by address, never cards on the start page: the short pages
+/// of "0. Using Neuronify" and the upstream tutorials 4 to 11, which this fork does not offer.
+pub const TUTORIAL_PAGES: &[Example] = &[
+    Example {
+        name: "0. Using Neuronify: reading a voltage",
+        description: "",
+        contents: saved!("tutorial/0b_reading_a_voltage.neuronify"),
+    },
+    Example {
+        name: "0. Using Neuronify: changing a value",
+        description: "",
+        contents: saved!("tutorial/0c_changing_a_value.neuronify"),
+    },
+    Example {
+        name: "0. Using Neuronify: drawing a connection",
+        description: "",
+        contents: saved!("tutorial/0d_drawing_a_connection.neuronify"),
+    },
+    Example {
+        name: "0. Using Neuronify: the playback bar",
+        description: "",
+        contents: saved!("tutorial/0e_playback_bar.neuronify"),
+    },
+    Example {
+        name: "Choosing sides",
+        description: "",
+        contents: saved!("tutorial/4_choosing.neuronify"),
+    },
+    Example {
+        name: "Sharpening edges",
+        description: "",
+        contents: saved!("tutorial/5_sharpening_edges.neuronify"),
+    },
+    Example {
+        name: "Keeping a rhythm",
+        description: "",
+        contents: saved!("tutorial/6_keeping_a_rhythm.neuronify"),
+    },
+    Example {
+        name: "Axons",
+        description: "",
+        contents: saved!("tutorial/7_axons.neuronify"),
+    },
+    Example {
+        name: "Myelin",
+        description: "",
+        contents: saved!("tutorial/8_myelin.neuronify"),
+    },
+    Example {
+        name: "Dendrites",
+        description: "",
+        contents: saved!("tutorial/9_dendrites.neuronify"),
+    },
+    Example {
+        name: "Coincidence",
+        description: "",
+        contents: saved!("tutorial/10_coincidence.neuronify"),
+    },
+    Example {
+        name: "Inhibition on a branch",
+        description: "",
+        contents: saved!("tutorial/11_inhibition_on_a_branch.neuronify"),
+    },
+];
+
 pub const EXAMPLE_CATEGORIES: &[ExampleCategory] = &[
     ExampleCategory {
-        name: "Getting started",
+        name: "Start here: learn Neuronify",
         examples: &[
             Example {
+                name: "0. Using Neuronify",
+                description: "Press a sensor, read a voltage, change a value, draw a connection and use the playback bar.",
+                contents: saved!("tutorial/0_using_neuronify.neuronify"),
+            },
+            Example {
                 name: "1. Spikes",
-                description: "Press the touch sensor and the neuron fires a spike.",
+                description: "Press the touch sensor to make a neuron fire.",
                 contents: saved!("tutorial/1_spikes.neuronify"),
             },
             Example {
                 name: "2. Leak currents",
-                description: "The neuron builds up potential from incoming currents, \
-                    but a continuous leak current brings it down again.",
+                description: "One press is not enough to make a neuron fire, because charge leaks away.",
                 contents: saved!("tutorial/2_leaks.neuronify"),
             },
             Example {
                 name: "3. Push and pull",
-                description: "Excitatory neurons push others toward firing. \
-                    Inhibitory neurons pull them back.",
+                description: "Excitatory neurons push others toward firing. Inhibitory neurons pull them back.",
                 contents: saved!("tutorial/3_push_and_pull.neuronify"),
-            },
-            Example {
-                name: "4. Choosing sides",
-                description: "Two sides pull each other down, so only one of them fires.",
-                contents: saved!("tutorial/4_choosing.neuronify"),
-            },
-            Example {
-                name: "5. Sharpening edges",
-                description: "Neighbors pull on each other and make an edge stand out.",
-                contents: saved!("tutorial/5_sharpening_edges.neuronify"),
-            },
-            Example {
-                name: "6. Keeping a rhythm",
-                description: "Close a loop of neurons and it keeps a beat on its own.",
-                contents: saved!("tutorial/6_keeping_a_rhythm.neuronify"),
-            },
-            Example {
-                name: "7. Axons",
-                description: "Spikes travel as action potentials along axons in real neurons.",
-                contents: saved!("tutorial/7_axons.neuronify"),
-            },
-            Example {
-                name: "8. Myelination",
-                description: "Wrapping an axon in myelin makes spikes travel faster along it.",
-                contents: saved!("tutorial/8_myelin.neuronify"),
-            },
-            Example {
-                name: "9. Dendrites",
-                description: "Axons can be connected to dendrites with synaptic connections.",
-                contents: saved!("tutorial/9_dendrites.neuronify"),
-            },
-            Example {
-                name: "10. Coincidence",
-                description: "Weak inputs make a neuron fire only when they arrive together.",
-                contents: saved!("tutorial/10_coincidence.neuronify"),
-            },
-            Example {
-                name: "11. Inhibition on a branch",
-                description: "Inhibition on a dendrite silences only the inputs beyond it.",
-                contents: saved!("tutorial/11_inhibition_on_a_branch.neuronify"),
             },
         ],
     },
@@ -156,114 +195,6 @@ pub const EXAMPLE_CATEGORIES: &[ExampleCategory] = &[
             },
         ],
     },
-    ExampleCategory {
-        name: "Neurons",
-        examples: &[
-            Example {
-                name: "Adaptation",
-                description: "This neuron gets harder to excite each time it fires, \
-                    and recovers after a rest.",
-                contents: saved!("adaptation.neuronify"),
-            },
-            Example {
-                name: "Bursting",
-                description: "One press makes this neuron fire a quick series of spikes.",
-                contents: saved!("bursting.neuronify"),
-            },
-            Example {
-                name: "Firing threshold",
-                description: "A steady current makes a neuron fire only when it is strong enough, \
-                    and faster the stronger it gets.",
-                contents: saved!("firing_threshold.neuronify"),
-            },
-            Example {
-                name: "Refractory period",
-                description: "After each spike a neuron needs a short rest, \
-                    which limits how fast it can fire.",
-                contents: saved!("refractory_period.neuronify"),
-            },
-        ],
-    },
-    ExampleCategory {
-        name: "Circuits",
-        examples: &[
-            Example {
-                name: "Summation",
-                description: "One input is not enough to make the neuron fire, \
-                    but several together, or one repeated quickly, are.",
-                contents: saved!("summation.neuronify"),
-            },
-            Example {
-                name: "Reverberation",
-                description: "One press keeps a loop of neurons firing until one of them tires.",
-                contents: saved!("reverberation.neuronify"),
-            },
-            Example {
-                name: "Half-center oscillator",
-                description: "Two neurons that hold each other back take turns firing, \
-                    like the circuits behind walking.",
-                contents: saved!("half_center_oscillator.neuronify"),
-            },
-            Example {
-                name: "Feedback loops",
-                description: "Feedback that excites makes a rhythm faster, \
-                    and feedback that inhibits makes it slower.",
-                contents: saved!("feedback_loops.neuronify"),
-            },
-        ],
-    },
-    ExampleCategory {
-        name: "Inhibition",
-        examples: &[
-            Example {
-                name: "Disinhibition",
-                description: "Holding back the neuron that holds back the output \
-                    lets the output fire.",
-                contents: saved!("disinhibition.neuronify"),
-            },
-            Example {
-                name: "Feedback inhibition",
-                description: "The output wakes an inhibitory neuron \
-                    that reaches back and slows the chain down.",
-                contents: saved!("feedback_inhibition.neuronify"),
-            },
-            Example {
-                name: "Lateral inhibition",
-                description: "Neighbors hold each other back, \
-                    so the strongest touch stands out clearly.",
-                contents: saved!("lateral_inhibition.neuronify"),
-            },
-            Example {
-                name: "Adaptive inhibition",
-                description: "An inhibitory neuron adapts, \
-                    and the neuron it holds back fires more and more.",
-                contents: saved!("adaptive_inhibition.neuronify"),
-            },
-        ],
-    },
-    ExampleCategory {
-        name: "Senses",
-        examples: &[
-            Example {
-                name: "Receptive fields",
-                description: "Each neuron watches its own spot of the picture \
-                    and fires when a moving dot crosses it.",
-                contents: saved!("receptive_fields.neuronify"),
-            },
-            Example {
-                name: "Listening to a neuron",
-                description: "Hear a neuron click as stripes of light pass \
-                    at the angle it prefers.",
-                contents: saved!("listening_to_a_neuron.neuronify"),
-            },
-            Example {
-                name: "Direction selectivity",
-                description: "The output fires when you press the sensors from right to left, \
-                    but not from left to right.",
-                contents: saved!("direction_selectivity.neuronify"),
-            },
-        ],
-    },
 ];
 
 #[cfg(test)]
@@ -271,9 +202,53 @@ mod tests {
     use super::*;
     use crate::components::LeakyNeuron;
 
+    /// Upstream examples kept in the folder but not offered to students in this fork.
+    const NOT_LISTED: &[&str] = &[
+        "adaptation.neuronify",
+        "adaptive_inhibition.neuronify",
+        "bursting.neuronify",
+        "direction_selectivity.neuronify",
+        "disinhibition.neuronify",
+        "feedback_inhibition.neuronify",
+        "feedback_loops.neuronify",
+        "firing_threshold.neuronify",
+        "half_center_oscillator.neuronify",
+        "lateral_inhibition.neuronify",
+        "listening_to_a_neuron.neuronify",
+        "receptive_fields.neuronify",
+        "refractory_period.neuronify",
+        "reverberation.neuronify",
+        "summation.neuronify",
+    ];
+
+    #[test]
+    fn the_start_page_has_only_the_tutorial_and_the_lab() {
+        let names: Vec<&str> = EXAMPLE_CATEGORIES.iter().map(|c| c.name).collect();
+        assert_eq!(
+            names,
+            [
+                "Start here: learn Neuronify",
+                "A&P Lab 10: synaptic summation"
+            ]
+        );
+        let lab = &EXAMPLE_CATEGORIES[1];
+        assert_eq!(lab.examples.len(), 8);
+        for example in lab.examples {
+            let expected = if example.file().contains("8-logic") {
+                crate::tools::Tool::Edit
+            } else {
+                crate::tools::Tool::Stimulate
+            };
+            assert_eq!(example.start_tool(), expected);
+        }
+    }
+
     #[test]
     fn examples_are_found_by_their_file() {
-        assert_eq!(find("bursting.neuronify").unwrap().name, "Bursting");
+        assert_eq!(
+            find("lab10/2-one-input.neuronify").unwrap().name,
+            "2. One input, two presses"
+        );
         assert!(find("missing.nfy").is_none());
     }
 
@@ -282,12 +257,13 @@ mod tests {
         let listed: Vec<&str> = EXAMPLE_CATEGORIES
             .iter()
             .flat_map(|category| category.examples)
+            .chain(TUTORIAL_PAGES)
             .map(Example::file)
             .collect();
         let folder = concat!(env!("CARGO_MANIFEST_DIR"), "/examples");
         for entry in std::fs::read_dir(folder).unwrap() {
             let file = entry.unwrap().file_name().to_string_lossy().into_owned();
-            if file.ends_with(".neuronify") {
+            if file.ends_with(".neuronify") && !NOT_LISTED.contains(&file.as_str()) {
                 assert!(listed.contains(&file.as_str()), "{file} is not listed");
             }
         }

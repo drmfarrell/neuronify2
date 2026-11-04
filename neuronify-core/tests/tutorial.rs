@@ -2,7 +2,7 @@ use glam::Vec3;
 use hecs::{Entity, World};
 use neuronify_core::dendrites::compartment_tree;
 use neuronify_core::elements::{spawn_cable, spawn_compartment, spawn_synapse};
-use neuronify_core::examples::{find, EXAMPLE_CATEGORIES};
+use neuronify_core::examples::find;
 use neuronify_core::rendering::canvas_bounds;
 use neuronify_core::simulation::{fire_nearby, step_simulation};
 use neuronify_core::{
@@ -106,11 +106,44 @@ fn reading_order(a: Vec3, b: Vec3) -> std::cmp::Ordering {
 }
 
 fn tutorial() -> Vec<&'static str> {
-    EXAMPLE_CATEGORIES[0]
-        .examples
-        .iter()
-        .map(|example| example.file())
-        .collect()
+    [
+        "1_spikes",
+        "2_leaks",
+        "3_push_and_pull",
+        "4_choosing",
+        "5_sharpening_edges",
+        "6_keeping_a_rhythm",
+        "7_axons",
+        "8_myelin",
+        "9_dendrites",
+        "10_coincidence",
+        "11_inhibition_on_a_branch",
+    ]
+    .iter()
+    .map(|name| &*Box::leak(format!("tutorial/{name}.neuronify").into_boxed_str()))
+    .collect()
+}
+
+#[test]
+fn using_neuronify_pages_chain_into_the_first_tutorial() {
+    let pages = [
+        "tutorial/0_using_neuronify.neuronify",
+        "tutorial/0b_reading_a_voltage.neuronify",
+        "tutorial/0c_changing_a_value.neuronify",
+        "tutorial/0d_drawing_a_connection.neuronify",
+        "tutorial/0e_playback_bar.neuronify",
+        "tutorial/1_spikes.neuronify",
+    ];
+    for pair in pages.windows(2) {
+        let canvas = Canvas::open(pair[0]);
+        let links: Vec<String> = canvas
+            .world
+            .query::<&Link>()
+            .iter()
+            .map(|(_, link)| link.example.clone())
+            .collect();
+        assert_eq!(links, [pair[1]], "{}", pair[0]);
+    }
 }
 
 #[test]
@@ -125,6 +158,10 @@ fn each_canvas_links_to_the_next_and_the_last_to_the_examples() {
             .iter()
             .map(|(_, link)| link.example.clone())
             .collect();
+        if file.contains("3_push") {
+            assert!(links.is_empty(), "{file}");
+            continue;
+        }
         assert_eq!(links.len(), 1, "{file}");
         match files.get(index + 1) {
             Some(next) => assert_eq!(links[0], *next),

@@ -198,6 +198,15 @@ impl Neuronify {
 
     fn tap(&mut self, application: &visula::Application) {
         if self.editing() {
+            // A tutorial's Next link works in every tool, not only View.
+            if let Some(position) = self.mouse.position {
+                let position = camera::ground_position(application, position);
+                if let Some(link) = self.editor.link_at(&self.world, position) {
+                    self.editor.selection = Some(link);
+                    self.follow_link();
+                    return;
+                }
+            }
             if self.editor.tap_while_editing() {
                 self.tapped_background = true;
             } else {
@@ -222,6 +231,7 @@ impl Neuronify {
             return;
         };
         self.editor.selection = None;
+        let tool = self.editor.tool;
         let Some(example) = crate::examples::find(&file) else {
             self.show_landing();
             return;
@@ -229,7 +239,8 @@ impl Neuronify {
         match example.spawn() {
             Ok(world) => {
                 let autosave = Autosave::copy_of(example.name);
-                self.open_world(world, 0.0, DEFAULT_SPEED, autosave)
+                self.open_world(world, 0.0, DEFAULT_SPEED, autosave);
+                self.editor.tool = tool;
             }
             Err(error) => self.load_error = Some(error),
         }
@@ -557,7 +568,12 @@ impl visula::Simulation for Neuronify {
         if let Some(landing) = &mut self.landing {
             match landing.show(context, self.theme, &mut self.library) {
                 Some(LandingChoice::Example { name, world, time }) => {
-                    self.open_world(*world, time, DEFAULT_SPEED, Autosave::copy_of(name))
+                    self.open_world(*world, time, DEFAULT_SPEED, Autosave::copy_of(name));
+                    self.editor.tool = crate::examples::EXAMPLE_CATEGORIES
+                        .iter()
+                        .flat_map(|category| category.examples)
+                        .find(|example| example.name == name)
+                        .map_or(Tool::View, |example| example.start_tool());
                 }
                 Some(LandingChoice::Saved {
                     id,

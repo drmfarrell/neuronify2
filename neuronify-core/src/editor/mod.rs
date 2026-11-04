@@ -385,6 +385,12 @@ impl Editor {
         }
     }
 
+    /// The link note under the position, if any (a tutorial's Next).
+    pub fn link_at(&self, world: &World, position: Vec3) -> Option<Entity> {
+        let (entity, _) = entity_at(world, &meter_frames(world), position)?;
+        world.get::<&Link>(entity).is_ok().then_some(entity)
+    }
+
     pub fn empty_at(&self, world: &World, position: Vec3) -> bool {
         entity_at(world, &meter_frames(world), position).is_none()
             && connection_at(world, position).is_none()

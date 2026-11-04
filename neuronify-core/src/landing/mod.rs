@@ -63,7 +63,7 @@ impl Colors {
 const MAX_CONTENT_WIDTH: f32 = 1100.0;
 const PAGE_MARGIN: f32 = 16.0;
 const MIN_CARD_WIDTH: f32 = 200.0;
-const CARDS_PER_SECTION: usize = 6;
+const CARDS_PER_SECTION: usize = 8;
 const COMPACT_TEXT_ROWS: usize = 2;
 const SECTION_HEADER_HEIGHT: f32 = 32.0;
 const BACK_ICON_SIZE: f32 = 20.0;
@@ -77,6 +77,9 @@ const STACK_LAYERS: usize = 3;
 const STACK_TILE_SCALE: f32 = 0.74;
 const STACK_STEP: f32 = 0.07;
 const STILL_DRAWING_MICROSECONDS_PER_FRAME: i64 = 2000;
+// Your simulations is not offered in this fork (the start page shows only the lab's two sections),
+// but its code stays so the upstream section can come back.
+#[allow(dead_code)]
 const YOUR_SIMULATIONS: &str = "Your simulations";
 
 pub enum LandingChoice {
@@ -96,6 +99,7 @@ pub enum LandingChoice {
 }
 
 #[derive(Clone, Copy)]
+#[allow(dead_code)]
 enum Card {
     NewSimulation,
     Saved(usize),
@@ -105,18 +109,16 @@ enum Card {
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 enum Section {
-    Yours,
     Examples(usize),
 }
 
 impl Section {
     fn all() -> impl Iterator<Item = Section> {
-        std::iter::once(Section::Yours).chain((0..EXAMPLE_CATEGORIES.len()).map(Section::Examples))
+        (0..EXAMPLE_CATEGORIES.len()).map(Section::Examples)
     }
 
     fn title(self) -> &'static str {
         match self {
-            Section::Yours => YOUR_SIMULATIONS,
             Section::Examples(category) => EXAMPLE_CATEGORIES[category].name,
         }
     }
@@ -423,9 +425,6 @@ impl LandingScreen {
 
     fn cards(&self, section: Section) -> Vec<Card> {
         match section {
-            Section::Yours => std::iter::once(Card::NewSimulation)
-                .chain((0..self.saved.len()).map(Card::Saved))
-                .collect(),
             Section::Examples(category) => (0..self.examples_by_category[category].len())
                 .map(|index| Card::Example { category, index })
                 .collect(),
@@ -732,6 +731,7 @@ fn paint_stack(
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod tests {
     use super::*;
     use crate::components::*;
@@ -1045,357 +1045,6 @@ mod tests {
         }
         let shown = neuron_opacities(&output);
         assert!(!shown.is_empty() && shown.iter().all(|&a| a == 255));
-    }
-    #[test]
-    fn your_simulations_come_first_with_the_newest_after_the_new_card() {
-        let context = egui::Context::default();
-        let mut library = library_with(&["Older", "Newer"]);
-        let mut landing = LandingScreen::new(false);
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        let position = |text| text_position(&output, text).unwrap();
-        assert!(position(YOUR_SIMULATIONS).y < position("Getting started").y);
-        let row = ["New simulation", "Newer", "Older"].map(position);
-        assert!(row.iter().all(|card| card.y == row[0].y));
-        assert!(row[0].x < row[1].x && row[1].x < row[2].x, "{row:?}");
-    }
-
-    #[test]
-    fn the_new_card_starts_an_empty_simulation() {
-        let context = egui::Context::default();
-        let mut library = Library::default();
-        let mut landing = LandingScreen::new(false);
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        let primary = PointerButton::Primary;
-        let (_, choice) = click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            "New simulation",
-            primary,
-        );
-        assert!(matches!(choice, Some(LandingChoice::NewSimulation)));
-    }
-
-    #[test]
-    fn clicking_a_saved_simulation_opens_it() {
-        let context = egui::Context::default();
-        let mut library = library_with(&["Mine"]);
-        let id = library.simulations()[0].id.clone();
-        let mut landing = LandingScreen::new(false);
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        let primary = PointerButton::Primary;
-        let (_, choice) = click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            "Mine",
-            primary,
-        );
-        let Some(LandingChoice::Saved {
-            id: opened,
-            world,
-            time,
-            speed,
-        }) = choice
-        else {
-            panic!("clicking the card did not open the saved simulation");
-        };
-        assert_eq!(opened, id);
-        assert!(time >= 1.0);
-        assert_eq!(speed, SAVED_SPEED);
-        let neurons = |world: &World| world.query::<&LeakyNeuron>().iter().count();
-        assert_eq!(neurons(&world), neurons(&saved_example()));
-    }
-
-    #[test]
-    fn cards_follow_the_library() {
-        let context = egui::Context::default();
-        let mut library = library_with(&["Mine", "Other"]);
-        let mut landing = LandingScreen::new(false);
-        run_with(&context, &mut landing, &mut library, vec![]);
-        let id = library.simulations()[0].id.clone();
-        library.rename(&id, "Renamed");
-        let other = library.simulations()[1].id.clone();
-        library.delete(&other);
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        assert!(text_position(&output, "Renamed").is_some());
-        assert!(text_position(&output, "Other").is_none());
-        assert_eq!(landing.saved.len(), 1);
-    }
-
-    #[test]
-    fn deleting_asks_first_and_escape_only_closes_the_question() {
-        let context = egui::Context::default();
-        let mut library = library_with(&["Mine"]);
-        let mut landing = LandingScreen::new(true);
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        let secondary = PointerButton::Secondary;
-        let primary = PointerButton::Primary;
-        click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            "Mine",
-            secondary,
-        );
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            "Delete…",
-            primary,
-        );
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        assert!(text_position(&output, "Delete “Mine”?").is_some());
-
-        let (_, choice) = run_with(&context, &mut landing, &mut library, vec![escape()]);
-        assert!(choice.is_none());
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        assert!(text_position(&output, "Delete “Mine”?").is_none());
-        assert_eq!(library.simulations().len(), 1);
-
-        click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            "Mine",
-            secondary,
-        );
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            "Delete…",
-            primary,
-        );
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            "Delete",
-            primary,
-        );
-        assert!(library.simulations().is_empty());
-    }
-
-    #[test]
-    fn renaming_from_the_card_menu() {
-        let context = egui::Context::default();
-        let mut library = library_with(&["Mine"]);
-        let mut landing = LandingScreen::new(false);
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            "Mine",
-            PointerButton::Secondary,
-        );
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            "Rename…",
-            PointerButton::Primary,
-        );
-        run_with(&context, &mut landing, &mut library, vec![]);
-        let typed = vec![Event::Text(" too".to_owned())];
-        run_with(&context, &mut landing, &mut library, typed);
-        let enter = Event::Key {
-            key: Key::Enter,
-            physical_key: None,
-            pressed: true,
-            repeat: false,
-            modifiers: Default::default(),
-        };
-        run_with(&context, &mut landing, &mut library, vec![enter]);
-        assert_eq!(library.simulations()[0].name, "Mine too");
-        assert!(!landing.dialogs.is_open());
-    }
-
-    #[test]
-    fn a_phone_screen_fits_six_cards_in_two_columns() {
-        let context = egui::Context::default();
-        let names = ["One", "Two", "Three", "Four", "Five", "Six", "Seven"];
-        let mut library = library_with(&names);
-        let mut landing = LandingScreen::new(false);
-        run_with(&context, &mut landing, &mut library, vec![]);
-        let longest_date = NaiveDate::from_ymd_opt(2025, 12, 31)
-            .unwrap()
-            .and_hms_opt(23, 59, 0)
-            .unwrap()
-            .and_local_timezone(Local)
-            .unwrap()
-            .to_utc();
-        for card in &mut landing.saved {
-            card.modified = longest_date;
-        }
-        let phone = vec2(390.0, 664.0);
-        let (output, _) = run_at(
-            &context,
-            &mut landing,
-            &mut library,
-            vec![],
-            phone,
-            0.0,
-            Theme::Dark,
-        );
-        let mut cards = card_rects(&output);
-        cards.sort_by(|a, b| {
-            a.top()
-                .total_cmp(&b.top())
-                .then(a.left().total_cmp(&b.left()))
-        });
-        let first_six = &cards[..6];
-        assert!(
-            first_six.iter().all(|card| card.bottom() <= phone.y),
-            "{first_six:?}"
-        );
-        for row in first_six.chunks(2) {
-            assert_eq!(row[0].top(), row[1].top());
-            assert!(row[0].right() < row[1].left());
-        }
-
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        let shown = names
-            .iter()
-            .filter(|name| text_position(&output, name).is_some())
-            .count();
-        assert_eq!(shown, CARDS_PER_SECTION - 2);
-        assert!(text_position(&output, "See all").is_some());
-    }
-
-    #[test]
-    fn see_all_opens_the_whole_category_on_a_page_of_its_own() {
-        let context = egui::Context::default();
-        let mut library = Library::default();
-        let mut landing = LandingScreen::new(true);
-        let category = EXAMPLE_CATEGORIES
-            .iter()
-            .position(|category| category.name == "Getting started")
-            .unwrap();
-        let names: Vec<&str> = EXAMPLE_CATEGORIES[category]
-            .examples
-            .iter()
-            .map(|example| example.name)
-            .collect();
-        let last = *names.last().unwrap();
-        let shown = |output: &egui::FullOutput| {
-            names
-                .iter()
-                .filter(|name| text_position(output, name).is_some())
-                .count()
-        };
-        let last_preview_runs = |landing: &LandingScreen| {
-            landing.examples_by_category[category][names.len() - 1]
-                .preview
-                .on_screen
-        };
-        let primary = PointerButton::Primary;
-
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        assert_eq!(shown(&output), CARDS_PER_SECTION - 1);
-        let (_, choice) = click(
-            &context,
-            &mut landing,
-            &mut library,
-            see_all_of(&output, "Getting started"),
-            primary,
-        );
-        assert!(choice.is_none());
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        assert_eq!(shown(&output), names.len());
-        assert!(text_position(&output, "Neurons").is_none());
-        assert!(last_preview_runs(&landing));
-
-        let (_, choice) = run_with(&context, &mut landing, &mut library, vec![escape()]);
-        assert!(choice.is_none());
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        assert_eq!(shown(&output), CARDS_PER_SECTION - 1);
-        assert!(!last_preview_runs(&landing));
-
-        click(
-            &context,
-            &mut landing,
-            &mut library,
-            see_all_of(&output, "Getting started"),
-            primary,
-        );
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            "Back",
-            primary,
-        );
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        assert!(text_position(&output, "Neurons").is_some());
-
-        click(
-            &context,
-            &mut landing,
-            &mut library,
-            see_all_of(&output, "Getting started"),
-            primary,
-        );
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        let (_, choice) = click_text(&context, &mut landing, &mut library, &output, last, primary);
-        let Some(LandingChoice::Example { name, .. }) = choice else {
-            panic!("clicking a card on the page did not open its example");
-        };
-        assert_eq!(name, last);
-    }
-
-    #[test]
-    fn the_last_card_shows_the_next_example_and_opens_the_whole_category() {
-        let context = egui::Context::default();
-        let mut library = Library::default();
-        let mut landing = LandingScreen::new(false);
-        let category = EXAMPLE_CATEGORIES
-            .iter()
-            .position(|category| category.name == "Getting started")
-            .unwrap();
-        let examples = EXAMPLE_CATEGORIES[category].examples;
-        let first_hidden = CARDS_PER_SECTION - 1;
-        let more = format!("{} more", examples.len() - first_hidden);
-
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        assert!(text_position(&output, examples[first_hidden].name).is_none());
-        assert!(
-            landing.examples_by_category[category][first_hidden]
-                .preview
-                .on_screen
-        );
-        let primary = PointerButton::Primary;
-        let (_, choice) = click_text(
-            &context,
-            &mut landing,
-            &mut library,
-            &output,
-            &more,
-            primary,
-        );
-        assert!(choice.is_none());
-        let (output, _) = run_with(&context, &mut landing, &mut library, vec![]);
-        assert!(examples
-            .iter()
-            .all(|example| text_position(&output, example.name).is_some()));
-        assert!(text_position(&output, &more).is_none());
     }
 
     #[test]
