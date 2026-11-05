@@ -54,8 +54,8 @@ The script, in order:
 3. Rsyncs to `/var/www/neuronify` without `.git` (`--delete --delete-excluded`).
 4. Runs the [Verify](#verify-run-these-on-the-box) curl checks against the live site and exits non-zero if any fail.
 
-No Cloudflare purge is needed. Cloudflare does not edge-cache `index.html`, `examples/*.neuronify` or `.wasm` (`cf-cache-status: DYNAMIC`), and nginx sends them `no-cache`.
-The hashed `.js` is edge-cached, but its name changes with every build.
+No Cloudflare purge is needed. Cloudflare does not edge-cache `index.html` or `examples/*.neuronify` (`cf-cache-status: DYNAMIC`), and nginx sends them `no-cache`.
+The hashed `.wasm` and `.js` files are edge-cached (see [Cloudflare caching](#cloudflare-caching)), but their names change with every build.
 
 To publish a new build, push it to the `site` branch, then run the script on the box.
 
@@ -104,12 +104,18 @@ The browser needs WebGPU or WebGL2, which current Chrome, Edge, Firefox and Safa
 
 Address parameters: `?open=<file>` starts in the Stimulate tool, so a first press on a touch sensor fires a neuron. Add `&mode=edit` or `&mode=view` to start in another tool (the take-home logic challenge uses `&mode=edit`).
 
-## For the server agent: make Cloudflare cache the app files
+## Cloudflare caching
 
-Measured on 2026-11-04 from the instructor's box: the `.wasm` file is served gzip (3.4 MB) with `cache-control: public, max-age=31536000, immutable`, but the response says `cf-cache-status: DYNAMIC`. Cloudflare does not cache `.wasm` by default (it is not in its default cached extensions), so every student download comes from the origin at about 100 to 170 KB/s, which is 20 to 34 seconds each. A room of 25 opening the page together would share that speed.
+Done 2026-11-05. Before then, Cloudflare did not cache `.wasm`, because it isn't in Cloudflare's default cached extensions.
+Every student download came from the origin. Measured from the instructor's machine on 2026-11-04, that ran at about 100–170 KB/s, or 20–34 seconds for the 3.4 MB (gzip) file.
 
-This needs Cloudflare dashboard or API access; the repository cannot fix it.
+The zone `wolfnode.org` now has the Cache Rule **"neuronify hashed app files (.wasm/.js)"**:
 
-1. Create a Cache Rule for host `neuronify.wolfnode.org`: for paths ending in `.wasm` or `.js`, set "Eligible for cache" and "Respect origin TTL" (the files carry a one-year immutable TTL because their names contain a hash).
-2. Keep `index.html` short-lived so that a new build is seen after a pull: either leave it uncached, or give it an edge TTL of a few minutes.
-3. Check with `curl -sI https://neuronify.wolfnode.org/<the .wasm file named in index.html>` twice. The first request may show `cf-cache-status: MISS`; the second must show `cf-cache-status: HIT`.
+- Expression: `(http.host eq "neuronify.wolfnode.org" and http.request.uri.path.extension in {"wasm" "js"})`
+- Eligible for cache. Edge TTL "use cache-control header if present, bypass cache if not" (the same mode as the chemsim `/assets/` rule). Browser TTL respects the origin.
+
+`index.html` and `examples/` are not matched, so a new build shows up as soon as it is deployed.
+The cache lives in each Cloudflare data center separately. After every deploy, the first visitor through a given data center downloads from the origin (`MISS`), and everyone after them gets it from the edge (`HIT`). To warm the campus data center before a class, open the site once from campus.
+
+Check: `curl -sI https://neuronify.wolfnode.org/<the .wasm file named in index.html>`, run twice. The second response must show `cf-cache-status: HIT`.
+The server's API token (`~/.cf-dns-token`) can edit Cache Rules and purge the cache for this zone.
